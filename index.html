@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>EJC Campo Grande - Controle de Rifas</title>
+  <title>EJC Campo Grande - Círculo</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -21,8 +21,6 @@
       --ejc-blue: #2563eb;
       --ejc-red: #dc2626;
       --ejc-green: #16a34a;
-      --ejc-dark-blue: #0f172a;
-      --ejc-light: #f8fafc;
     }
 
     * {
@@ -175,6 +173,10 @@
                   EJC CAMPO GRANDE
                 </h1>
 
+                <p class="title-font text-xl md:text-2xl font-black text-green-700 mt-2">
+                  Equipe CÍRCULO
+                </p>
+
                 <p class="text-slate-600 mt-3 max-w-2xl text-sm md:text-base">
                   Sistema de organização das rifas, entradas, saídas, PIX, espécie e saldo final.
                 </p>
@@ -306,7 +308,7 @@
           </h2>
 
           <p class="text-slate-500 mt-2">
-            Acesso exclusivo para o usuário administrador dos Anjos.
+            Acesso exclusivo para o administrador da equipe Círculo.
           </p>
 
           <form id="formLogin" class="mt-5 space-y-4">
@@ -548,7 +550,7 @@
               </h2>
 
               <p class="text-sm text-slate-500">
-                Use os filtros para encontrar entradas e saídas.
+                Use os filtros para encontrar entradas e saídas da equipe Círculo.
               </p>
             </div>
 
@@ -621,6 +623,9 @@
       appId: "1:1030063599704:web:aff395634cf9828cd2da2d",
       measurementId: "G-WYXXRKDZ7X"
     };
+
+    // Identificação deste site dentro do mesmo banco
+    const SITE_ID = "circulo";
 
     const ADMIN_EMAIL = "Anjos@ejc2026.com";
 
@@ -731,6 +736,7 @@
     $("entradaFonte").addEventListener("change", atualizarCampoNomeEntrada);
     atualizarCampoNomeEntrada();
 
+    // Login com e-mail fixo
     $("formLogin").addEventListener("submit", async (event) => {
       event.preventDefault();
 
@@ -765,6 +771,7 @@
       renderizarTudo();
     });
 
+    // Salvar entrada
     $("formEntrada").addEventListener("submit", async (event) => {
       event.preventDefault();
 
@@ -788,6 +795,7 @@
 
       try {
         await addDoc(collection(db, "movimentacoes"), {
+          equipe: SITE_ID,
           tipo: "entrada",
           nome,
           valor,
@@ -804,10 +812,11 @@
         alert("Entrada salva com sucesso!");
       } catch (error) {
         console.error(error);
-        alert("Erro ao salvar entrada.");
+        alert("Erro ao salvar entrada. Verifique as regras do Firebase.");
       }
     });
 
+    // Salvar saída
     $("formSaida").addEventListener("submit", async (event) => {
       event.preventDefault();
 
@@ -824,6 +833,7 @@
 
       try {
         await addDoc(collection(db, "movimentacoes"), {
+          equipe: SITE_ID,
           tipo: "saida",
           descricao,
           valor,
@@ -839,17 +849,25 @@
         alert("Saída salva com sucesso!");
       } catch (error) {
         console.error(error);
-        alert("Erro ao salvar saída.");
+        alert("Erro ao salvar saída. Verifique as regras do Firebase.");
       }
     });
 
+    // Busca em tempo real.
+    // Observação:
+    // - Mostra documentos com equipe "circulo".
+    // - Também mostra documentos antigos sem campo "equipe", para você não perder dados já cadastrados.
     const q = query(collection(db, "movimentacoes"), orderBy("createdAt", "desc"));
 
     onSnapshot(q, (snapshot) => {
-      movimentacoes = snapshot.docs.map((documento) => ({
+      const todos = snapshot.docs.map((documento) => ({
         id: documento.id,
         ...documento.data()
       }));
+
+      movimentacoes = todos.filter((item) => {
+        return item.equipe === SITE_ID || !item.equipe;
+      });
 
       renderizarTudo();
     }, (error) => {
@@ -984,6 +1002,7 @@
               </p>
 
               ${item.observacao ? `<p class="text-xs text-slate-400 mt-1">Obs: ${item.observacao}</p>` : ""}
+              ${!item.equipe ? `<p class="text-xs text-yellow-700 mt-1 font-bold">Registro antigo sem equipe, exibido no Círculo.</p>` : ""}
             </div>
 
             <div class="flex items-center gap-3 md:text-right">
